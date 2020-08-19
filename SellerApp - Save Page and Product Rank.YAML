@@ -1,0 +1,21 @@
+# SellerApp - Save Page and Product Rank
+#
+
+# Account slugs:
+#  - quickbase[QPar83d]: workfiles <None>
+---
+- META:
+    name: SellerApp - Save Page and Product Rank
+- QUERY quickbase[QPar83d] record search -> a:
+    export_fields: 7, 8
+    table: '"workfiles: sellerapp_tasklist" <bqsc9rt36>'
+    ___: ___
+    FILTERS:
+    - AND:
+      - status equals completed
+- a<>LOOP:
+  - DO:
+    - ACTION webhooks request make -> b:
+        ___: ___
+        url: '{{a.report_url}}'
+...
