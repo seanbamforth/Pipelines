@@ -1,0 +1,32 @@
+# SellerApp Check if request ready
+#
+
+# Account slugs:
+#  - quickbase[QPar83d]: workfiles <None>
+---
+- META:
+    name: SellerApp Check if request ready
+- QUERY quickbase[QPar83d] record search -> a:
+    export_fields: 6, 7, 8
+    table: '"workfiles: sellerapp_tasklist" <bqsc9rt36>'
+    ___: ___
+    FILTERS:
+    - AND:
+      - status !set
+- a<>LOOP:
+  - DO:
+    - ACTION webhooks request make -> b:
+        ___: ___
+        headers:
+          name: 'app-client-id
+
+            app-token'
+          value: 'skaffles
+
+            C3YJpJDLEICefGlGFAGDHoXizTECKe9tCwa3DIR8'
+        url: https://api.sellerapp.com/b2b/keyword_search/ranks?request_id={{a.request_id}}
+    - a<>ACTION quickbase record update -> c:
+        ___: ___
+        report_url: '{{b.json.report_url}}'
+        status: '{{b.json.status}}'
+...
