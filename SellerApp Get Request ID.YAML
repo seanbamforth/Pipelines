@@ -1,0 +1,29 @@
+# SellerApp Get Request ID's
+#
+
+# Account slugs:
+#  - quickbase[QPar83d]: workfiles <None>
+---
+- META:
+    name: SellerApp Get Request ID's
+- ACTION webhooks request make -> a:
+    authentication: http-basic
+    ___: ___
+    body: "{\n    \"keywords\" : [\n        \"dog shampoo\"\n     ],\n\n     \"product_ids\"\
+      : [\n         \"B00CEY5L7C\"\n     ]\n}"
+    content_type: application/json
+    headers:
+      name: 'app-client-id
+
+        app-token'
+      value: 'skaffles
+
+        C3YJpJDLEICefGlGFAGDHoXizTECKe9tCwa3DIR8'
+    method: POST
+    url: https://api.sellerapp.com/b2b/keyword_search/schedule
+- ACTION quickbase[QPar83d] record create -> b:
+    export_fields: '"request_id" <6>'
+    table: '"workfiles: sellerapp_tasklist" <bqsc9rt36>'
+    ___: ___
+    request_id: '{{a.json.request_id}}'
+...
