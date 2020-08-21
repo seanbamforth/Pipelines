@@ -1,11 +1,11 @@
-# SellerApp - Save Page and Product Rank
+# SellerApp # Save Page and Product Rank
 #
 
 # Account slugs:
 #  - quickbase[QPar83d]: workfiles <None>
 ---
 - META:
-    name: SellerApp - Save Page and Product Rank
+    name: 'SellerApp # Save Page and Product Rank'
 - QUERY quickbase[QPar83d] record search -> a:
     export_fields: 7, 8
     table: '"workfiles: sellerapp_tasklist" <bqsc9rt36>'
@@ -15,7 +15,31 @@
       - status equals completed
 - a<>LOOP:
   - DO:
-    - ACTION webhooks request make -> b:
+    - ACTION json-handler json_source fetch_json_blob -> b:
+        json_url: '{{a.report_url}}'
         ___: ___
-        url: '{{a.report_url}}'
+    - b<>QUERY json-handler json_object search -> c:
+        json_schema_sample: '{"keyword":"dog shampoo","product_id":"B00CEY5L7C","page_rank":"1","product_rank":"6"}'
+        ___: ___
+        FILTERS:
+        - AND:
+          - product_rank !equals
+    - c<>LOOP:
+      - DO:
+        - ACTION quickbase[QPar83d] record create -> d:
+            export_fields: 6, 8, 7, 9
+            table: '"workfiles: sellerapp_rank" <bqsib2cqv>'
+            ___: ___
+            keyword: '{{c.keyword}}'
+            page_rank: '{% if c.page_rank != "-" %}
+
+              {{c.page_rank}}
+
+              {% endif %}'
+            product_id: '{{c.product_id}}'
+            product_rank: '{% if c.product_rank != "-" %}
+
+              {{c.product_rank}}
+
+              {% endif %}'
 ...
