@@ -1,0 +1,147 @@
+# AutoTarget - Using WebHooks
+#
+
+# Account slugs:
+#  - quickbase[gVZp2pb]: Quickbase token <None>
+---
+- META:
+    name: AutoTarget - Using WebHooks
+- ACTION webhooks request make -> a:
+    ___: ___
+    url: https://lwaoauth.herokuapp.com/refresh?password=PebblesAndPepper
+- QUERY quickbase[gVZp2pb] record search -> b:
+    export_fields: 11, 15, 8, 7, 13, 12, 14, 9, 10, 6, 16, 19, 17, 18, 22, 23, 20,
+      21, 24, 25, 36, 37, 38, 39
+    table: '"Amazon Advertising Manager: Campaign Creation" <bqn7t6khh>'
+    ___: ___
+    FILTERS:
+    - AND:
+      - create_campaign is true
+      - 10<>targeting_type is auto
+- b<>LOOP:
+  - DO:
+    - ACTION webhooks request make -> c:
+        ___: ___
+        body: "[\n{\n\t\"name\": \"{{b.name}}\",\n\t\"campaignType\": \"{{b.campaign_type}}\"\
+          ,\n\t\"targetingType\": \"{{b.targeting_type}}\",\n\t\"state\": \"{{b.state}}\"\
+          ,\n\t\"dailyBudget\": {{b.daily_budget}},\n\t\"startDate\": \"{{b.start_date_calc}}\"\
+          ,\n    \"bidding\": \n       {\n       \"strategy\": \"{{b.strategy}}\"\
+          ,\n       \"adjustments\": \n         [\n              {\n             \
+          \  \"predicate\": \"placementTop\",\n               \"percentage\": {{b.placement_placement_top}}\n\
+          \               },\n               {\n               \"predicate\": \"placementProductPage\"\
+          ,\n               \"percentage\": {{b.placement_product_page}}\n       \
+          \       }\n          ]\n       }\n}\n]"
+        headers:
+          name: 'Amazon-Advertising-API-ClientId
+
+            Authorization
+
+            Amazon-Advertising-API-Scope
+
+            Content-Type'
+          value: 'amzn1.application-oa2-client.fd49f777394d4f55820ce724594b510b
+
+            Bearer {{a.content}}
+
+            2158717265636333
+
+            application/json'
+        method: POST
+        url: https://advertising-api.amazon.com/v2/campaigns
+    - ACTION webhooks request make -> d:
+        ___: ___
+        body: "[\n{\n\t\t\"campaignId\": {{c.json[0].campaignId}},\n\t\t\"name\":\
+          \ \"{{b.ad_group_name}}\",\n\t\t\"state\": \"{{b.ad_group_state}}\",\n\t\
+          \t\"defaultBid\": {{b.ad_group_default_bid}}\n}\n]"
+        headers:
+          name: 'Amazon-Advertising-API-ClientId
+
+            Authorization
+
+            Amazon-Advertising-API-Scope
+
+            Content-Type'
+          value: 'amzn1.application-oa2-client.fd49f777394d4f55820ce724594b510b
+
+            Bearer {{a.content}}
+
+            2158717265636333
+
+            application/json'
+        method: POST
+        url: https://advertising-api.amazon.com/v2/sp/adGroups
+    - ACTION webhooks request make -> e:
+        ___: ___
+        body: "[\n{\n    \"campaignId\": {{c.json[0].campaign_id}},\n    \"adGroupId\"\
+          :  {{d.json[0].ad_group_id}},\n    \"asin\": \"{{b.product_ad_asin}}\",\n\
+          \    \"state\": \"{{b.product_ad_state}}\"\n}\n]"
+        headers:
+          name: 'Amazon-Advertising-API-ClientId
+
+            Authorization
+
+            Amazon-Advertising-API-Scope
+
+            Content-Type'
+          value: 'amzn1.application-oa2-client.fd49f777394d4f55820ce724594b510b
+
+            Bearer {{a.content}}
+
+            2158717265636333
+
+            application/json'
+        method: POST
+        url: https://advertising-api.amazon.com/v2/sp/productAds
+    - ACTION webhooks request make -> f:
+        ___: ___
+        headers:
+          name: 'Amazon-Advertising-API-ClientId
+
+            Authorization
+
+            Amazon-Advertising-API-Scope
+
+            Content-Type'
+          value: 'amzn1.application-oa2-client.fd49f777394d4f55820ce724594b510b
+
+            Bearer {{a.content}}
+
+            2158717265636333
+
+            application/json'
+        url: https://advertising-api.amazon.com/v2/sp/targets?campaignIdFilter={{c.json[0].campaignId}}
+    - ACTION webhooks request make -> g:
+        ___: ___
+        body: "[ \n    {% for itm in f.json %} \n        {\n        \"campaignId\"\
+          : {{c.json[0].campaignId}},\n        \"adGroupId\": {{d.json[0].adGroupId}},\n\
+          \        \"targetId\":  {{itm.targetId}},\n        \"expressionType\": \"\
+          auto\",\n        \"expression\": {{itm.expression|to_json}},\n        {%\
+          \ if itm.expression[0].type == \"queryHighRelMatches\" %}\n            \"\
+          bid\": {{b.query_high_rel_matches_initial_bid}},\n        {% endif %}\n\
+          \        {% if itm.expression[0].type == \"queryBroadRelMatches\" %}\n \
+          \           \"bid\": {{b.query_broad_rel_matches_initial_bid}},\n      \
+          \  {% endif %}\n        {% if itm.expression[0].type == \"asinSubstituteRelated\"\
+          \ %}\n            \"bid\": {{b.asin_substitute_related_initial_bid}},\n\
+          \        {% endif %}\n        {% if itm.expression[0].type == \"asinAccessoryRelated\"\
+          \ %}\n            \"bid\": {{b.asin_accessory_related_initial_bid}},\n \
+          \       {% endif %}\n        \"state\": \"enabled\" \n        }\n\n    \
+          \    {% if not loop.last %} \n            ,  \n        {% endif %} \n  \
+          \  {% endfor %} \n]"
+        headers:
+          name: 'Amazon-Advertising-API-ClientId
+
+            Authorization
+
+            Amazon-Advertising-API-Scope
+
+            Content-Type'
+          value: 'amzn1.application-oa2-client.fd49f777394d4f55820ce724594b510b
+
+            Bearer {{a.content}}
+
+            2158717265636333
+
+            application/json'
+        method: POST
+        url: https://advertising-api.amazon.com/v2/sp/targets
+...
