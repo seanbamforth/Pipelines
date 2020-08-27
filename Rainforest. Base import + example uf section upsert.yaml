@@ -1,0 +1,80 @@
+# Rainforest v7
+#
+
+# Account slugs:
+#  - quickbase[gVZp2pb]: Quickbase token <None>
+---
+- META:
+    name: Rainforest v7
+- QUERY quickbase[gVZp2pb] record search -> a:
+    export_fields: 146, 11, 33, 34, 10, 55, 54, 59, 58, 52, 60, 57, 53, 61, 62, 51,
+      56, 66, 65, 67, 64, 30, 31, 15, 48, 13, 38, 37, 40, 16, 18, 78, 32, 17, 39,
+      36, 35, 14, 6, 12, 63
+    table: '"ProductTrack: Amazon Product Data" <bqpcft9w5>'
+    ___: ___
+    FILTERS:
+    - AND:
+      - refresh is true
+- a<>LOOP:
+  - DO:
+    - ACTION json-handler json_source fetch_json_blob -> b:
+        json_url: http://seany.ngrok.io/test2.json
+        ___: ___
+    - b<>QUERY json-handler json_object search -> c:
+        ___: ___
+    - a<>ACTION quickbase record update -> d:
+        ___: ___
+        a_plus_content_has_a_plus_content: '{{c.product.a_plus_content.has_a_plus_content}}'
+        a_plus_content_third_party: '{{c.product.a_plus_content.third_party}}'
+        brand: '{{c.product.brand}}'
+        buybox_winner_fulfillment_third_party_seller_link: '{{c.product.buybox_winner.fulfillment.third_party_seller.link}}'
+        buybox_winner_fulfillment_third_party_seller_name: '{{c.product.buybox_winner.fulfillment.third_party_seller.name}}'
+        buybox_winner_fulfillment_type: '{{c.product.buybox_winner.fulfillment.type}}'
+        buybox_winner_is_prime: '{{c.product.buybox_winner.is_prime}}'
+        buybox_winner_price_currency: '{{c.product.buybox_winner.price.currency}}'
+        buybox_winner_price_raw: '{{c.product.buybox_winner.price.raw}}'
+        buybox_winner_price_symbol: '{{c.product.buybox_winner.price.symbol}}'
+        buybox_winner_price_value: '{{c.product.buybox_winner.price.value}}'
+        buybox_winner_shipping_raw: '{{c.product.buybox_winner.shipping.raw}}'
+        description: '{{c.product.description}}'
+        dimensions: '{{c.product.dimensions}}'
+        feature_bullets_flat: '{{c.product.feature_bullets_flat}}'
+        first_available_raw: '{{c.product.first_available.raw}}'
+        first_available_utc: '{{c.product.first_available.utc}}'
+        has_coupon: '{{c.product.has_coupon}}'
+        link: '{{c.product.link}}'
+        main_image_link: '{{c.product.main_image.link}}'
+        promotions_feature: '{{c.product.promotions_feature}}'
+        rating: '{{c.product.rating}}'
+        ratings_total: '{{c.product.ratings_total}}'
+        specifications_flat: '{{c.product.specifications_flat}}'
+        sub_title_link: '{{c.product.sub_title.link}}'
+        sub_title_text: '{{c.product.sub_title.text}}'
+        title: '{{c.product.title}}'
+        weight: '{{c.product.weight}}'
+    - ACTION quickbase[gVZp2pb] bulk_record_set define -> e:
+        export_fields: 8, 11, 9, 10, 6, 7
+        merge_field: '"ASIN_ID" <12>'
+        table: '"ProductTrack: product variants" <bqs2hxykn>'
+        ___: ___
+    - b<>QUERY json-handler json_object search -> f:
+        json_records_path: /product/variants
+        json_schema_sample: "{\"title\":\"Variant Title 1\",\"asin\":\"asin 1\",\"\
+          link\":\"http://link.com\",\n                \"price\":{\"symbol\": \"$\"\
+          ,\"value\": 16.98,\"currency\": \"USD\",\"raw\": \"$16.98\"},\n        \
+          \        \"dimensions\":\"1x2x3\"\n            }"
+        ___: ___
+    - f<>LOOP:
+      - DO:
+        - e<>ACTION quickbase bulk_record_set create -> g:
+            ___: ___
+            asin: '{{f.asin}}'
+            asin_id: '{{a.asin}}:{{f.asin}}'
+            dimensions: '{{f.dimensions}}'
+            link: '{{f.link}}'
+            price: '{{f.price.value}}'
+            related_asin: '{{a.asin}}'
+            title: '{{f.title}}'
+    - e<>ACTION quickbase bulk_record_set commit_bulk_upsert -> h:
+        ___: ___
+...
